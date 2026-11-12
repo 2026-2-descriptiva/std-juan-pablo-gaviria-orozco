@@ -7,5 +7,14 @@ def pregunta_01():
 
         214
     """
+    import csv
+    import gzip
 
-    raise NotImplementedError
+    with gzip.open("LAB_01_python_basico/data/data.csv.gz", "rt", encoding="utf-8", newline="") as archivo:
+        lector = csv.reader(archivo, delimiter="\t")
+        total = 0
+        for fila in lector:
+            total += int(fila[1])
+
+    return total
+    

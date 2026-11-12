@@ -8,5 +8,15 @@ def pregunta_04():
 
         [("01", 3), ("02", 4), ("03", 2), ...]
     """
+    import csv
+    import gzip
 
-    raise NotImplementedError
+    with gzip.open("LAB_01_python_basico/data/data.csv.gz", "rt", encoding="utf-8", newline="") as archivo:
+            lector = csv.reader(archivo, delimiter="\t")
+            diccionario_conteo = {}
+
+            for registro in lector:
+                mes = registro[2].split("-")[1]
+                diccionario_conteo[mes] = diccionario_conteo.get(mes, 0) + 1
+
+            return sorted(diccionario_conteo.items())

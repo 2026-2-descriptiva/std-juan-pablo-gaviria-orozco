@@ -12,5 +12,31 @@ def pregunta_06():
 
         [("aaa", 1, 9), ("bbb", 1, 9), ...]
     """
+    import csv
+    import gzip
 
-    raise NotImplementedError
+    with gzip.open("LAB_01_python_basico/data/data.csv.gz", "rt", encoding="utf-8", newline="") as archivo:
+        lector = csv.reader(archivo, delimiter="\t")
+        limpieza_1 = [registro[4].split(",") for registro in list(lector)]
+        limpieza_2 = [
+                registro.split(":")
+                for lista in limpieza_1
+                for registro in lista
+            ]
+        diccionario_conteo = {
+            key:(int(max(limpieza_2, key=lambda par: int(par[1]))[1]), 0) for key, _ in sorted(limpieza_2)
+            }
+
+        for key, value in limpieza_2:
+            value = int(value)
+            diccionario_conteo[key] = (
+                min(diccionario_conteo[key][0], value),
+                max(diccionario_conteo[key][1], value)
+                                        )
+        
+        return [(registro[0], registro[1][0], registro[1][1]) for registro in diccionario_conteo.items()]
+
+
+print(pregunta_06())
+
+

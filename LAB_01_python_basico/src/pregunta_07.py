@@ -10,5 +10,16 @@ def pregunta_07():
 
         [(0, ["C"]), (1, ["E", "B", "E"]), (2, ["A", "E"]), ...]
     """
+    import csv
+    import gzip
 
-    raise NotImplementedError
+    with gzip.open("LAB_01_python_basico/data/data.csv.gz", "rt", encoding="utf-8", newline="") as archivo:
+        lector = csv.reader(archivo, delimiter="\t")
+
+        tuplas = [(registro[0], int(registro[1])) for registro in list(lector)]
+
+        formato = [(valor, []) for _, valor in dict.fromkeys(tuplas)]
+        return formato
+
+
+print(pregunta_07())
