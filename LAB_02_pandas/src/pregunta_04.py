@@ -13,4 +13,10 @@ def pregunta_04():
         ...
     """
 
-    raise NotImplementedError
+    from pathlib import Path
+
+    import pandas as pd
+
+    ruta = Path(__file__).resolve().parents[1] / "data" / "tbl0.tsv"
+    tabla = pd.read_csv(ruta, sep="\t")
+    return tabla.groupby("c1")["c2"].mean()

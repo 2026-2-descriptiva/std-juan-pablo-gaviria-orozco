@@ -15,4 +15,13 @@ def pregunta_10():
         ...
     """
 
-    raise NotImplementedError
+    from pathlib import Path
+
+    import pandas as pd
+
+    ruta = Path(__file__).resolve().parents[1] / "data" / "tbl0.tsv"
+    tabla = pd.read_csv(ruta, sep="\t")
+    valores = tabla.groupby("c1")["c2"].apply(
+        lambda columna: ":".join(str(valor) for valor in sorted(columna))
+    )
+    return valores.to_frame()

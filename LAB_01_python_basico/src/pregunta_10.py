@@ -10,5 +10,18 @@ def pregunta_10():
 
         [("E", 3, 5), ("A", 3, 4), ("B", 4, 4), ...]
     """
+    import csv
+    import gzip
+    from pathlib import Path
 
-    raise NotImplementedError
+    ruta_datos = Path(__file__).resolve().parents[1] / "data" / "data.csv.gz"
+    with gzip.open(ruta_datos, "rt", encoding="utf-8", newline="") as archivo:
+        lector = csv.reader(archivo, delimiter="\t")
+
+        conteo_final = [
+            (registro[0], 
+            len(registro[3].split(",")), 
+            len(registro[4].split(","))) for registro in list(lector)
+            ]
+
+        return conteo_final

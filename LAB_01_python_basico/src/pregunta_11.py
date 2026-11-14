@@ -9,5 +9,20 @@ def pregunta_11():
 
         {"a": 122, "b": 49, "c": 91, ...}
     """
+    import csv
+    import gzip
+    from pathlib import Path
 
-    raise NotImplementedError
+    ruta_datos = Path(__file__).resolve().parents[1] / "data" / "data.csv.gz"
+    with gzip.open(ruta_datos, "rt", encoding="utf-8", newline="") as archivo:
+        lector = csv.reader(archivo, delimiter="\t")
+
+        columnas_necesarias = [(int(registro[1]), registro[3].split(",")) for registro in list(lector)]
+
+        diccionario_conteos = {}
+
+        for valor, letras in columnas_necesarias:
+            for letra in letras:
+                diccionario_conteos[letra] = diccionario_conteos.get(letra, 0) + valor
+
+        return dict(sorted(list(diccionario_conteos.items())))

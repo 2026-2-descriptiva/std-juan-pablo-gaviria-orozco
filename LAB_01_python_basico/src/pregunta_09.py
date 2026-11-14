@@ -8,5 +8,18 @@ def pregunta_09():
 
         {"aaa": 13, "bbb": 16, "ccc": 23, ...}
     """
+    import csv
+    import gzip
+    from pathlib import Path
 
-    raise NotImplementedError
+    ruta_datos = Path(__file__).resolve().parents[1] / "data" / "data.csv.gz"
+    with gzip.open(ruta_datos, "rt", encoding="utf-8", newline="") as archivo:
+        lector = csv.reader(archivo, delimiter="\t")
+
+        metrics = [registro[4].split(",") for registro in list(lector)]
+
+        claves_metrics = [par.split(":")[0] for registro in metrics for par in registro]
+
+        diccionario_conteo = {clave:claves_metrics.count(clave) for clave in sorted(list(set(claves_metrics)))}
+
+        return diccionario_conteo

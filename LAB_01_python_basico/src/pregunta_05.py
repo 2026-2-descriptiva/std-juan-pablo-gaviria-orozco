@@ -10,8 +10,10 @@ def pregunta_05():
     """
     import csv
     import gzip
+    from pathlib import Path
 
-    with gzip.open("LAB_01_python_basico/data/data.csv.gz", "rt", encoding="utf-8", newline="") as archivo:
+    ruta_datos = Path(__file__).resolve().parents[1] / "data" / "data.csv.gz"
+    with gzip.open(ruta_datos, "rt", encoding="utf-8", newline="") as archivo:
             lector = csv.reader(archivo, delimiter="\t")
             diccionario_conteo = {}
 
@@ -25,4 +27,4 @@ def pregunta_05():
                 else:
                      diccionario_conteo[letra] = (int(registro[1]), int(registro[1]))
 
-            return sorted(diccionario_conteo.items())
+            return sorted([(letra, tupla[0], tupla[1]) for letra, tupla in diccionario_conteo.items()])

@@ -15,4 +15,12 @@ def pregunta_13():
         ...
     """
 
-    raise NotImplementedError
+    from pathlib import Path
+
+    import pandas as pd
+
+    directorio_datos = Path(__file__).resolve().parents[1] / "data"
+    tabla0 = pd.read_csv(directorio_datos / "tbl0.tsv", sep="\t")
+    tabla2 = pd.read_csv(directorio_datos / "tbl2.tsv", sep="\t")
+    combinada = tabla0.merge(tabla2, on="c0")
+    return combinada.groupby("c1")["c5b"].sum()

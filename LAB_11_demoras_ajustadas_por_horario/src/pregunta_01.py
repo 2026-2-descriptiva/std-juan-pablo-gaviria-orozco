@@ -58,4 +58,72 @@ def pregunta_01() -> tuple[pd.DataFrame, pd.DataFrame]:
         ...
     """
 
-    raise NotImplementedError
+    from pathlib import Path
+
+    directorio = Path(__file__).resolve().parents[1]
+    datos = pd.read_csv(
+        directorio / "data" / "flights_by_carrier_day_hour.csv.gz",
+        compression="gzip",
+    )
+
+    hourly = (
+        datos.groupby("scheduled_departure_hour", as_index=False)
+        .agg(
+            operated_flights=("operated_flights", "sum"),
+            delayed_departure_15_flights=("delayed_departure_15_flights", "sum"),
+        )
+        .sort_values("scheduled_departure_hour")
+    )
+    hourly["delay_rate"] = (
+        hourly["delayed_departure_15_flights"] / hourly["operated_flights"]
+    )
+    national_rates = hourly.set_index("scheduled_departure_hour")["delay_rate"]
+    datos["expected_delayed_flights"] = (
+        datos["operated_flights"]
+        * datos["scheduled_departure_hour"].map(national_rates)
+    )
+
+    carriers = (
+        datos.groupby("reporting_airline", as_index=False)
+        .agg(
+            operated_flights=("operated_flights", "sum"),
+            delayed_departure_15_flights=("delayed_departure_15_flights", "sum"),
+            expected_delayed_flights=("expected_delayed_flights", "sum"),
+        )
+    )
+    carriers = carriers[carriers["operated_flights"] >= 100000].copy()
+    carriers["delay_rate"] = (
+        carriers["delayed_departure_15_flights"] / carriers["operated_flights"]
+    )
+    carriers["observed_to_expected_ratio"] = (
+        carriers["delayed_departure_15_flights"]
+        / carriers["expected_delayed_flights"]
+    )
+    carriers["crude_rank"] = (
+        carriers["delay_rate"].rank(method="min", ascending=False).astype(int)
+    )
+    carriers["adjusted_rank"] = (
+        carriers["observed_to_expected_ratio"]
+        .rank(method="min", ascending=False)
+        .astype(int)
+    )
+    carriers = carriers.sort_values("adjusted_rank").reset_index(drop=True)
+    carriers = carriers[
+        [
+            "reporting_airline",
+            "operated_flights",
+            "delayed_departure_15_flights",
+            "delay_rate",
+            "expected_delayed_flights",
+            "observed_to_expected_ratio",
+            "crude_rank",
+            "adjusted_rank",
+        ]
+    ]
+
+    directorio_salida = directorio / "submission"
+    directorio_salida.mkdir(parents=True, exist_ok=True)
+    hourly.to_csv(directorio_salida / "hourly_delay_rates.csv", index=False)
+    carriers.to_csv(directorio_salida / "carrier_adjusted_delays.csv", index=False)
+
+    return hourly, carriers

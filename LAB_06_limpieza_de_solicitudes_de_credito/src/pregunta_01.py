@@ -34,4 +34,75 @@ def pregunta_01():
         ...
     """
 
-    raise NotImplementedError
+    from pathlib import Path
+
+    import pandas as pd
+
+    directorio = Path(__file__).resolve().parents[1]
+    ruta_datos = directorio / "data" / "solicitudes_de_credito.csv.gz"
+    tabla = pd.read_csv(
+        ruta_datos,
+        sep=";",
+        compression="gzip",
+        dtype=str,
+        keep_default_na=False,
+        encoding="utf-8",
+    ).iloc[:, 1:]
+    tabla.columns = [
+        "sexo",
+        "tipo_de_emprendimiento",
+        "idea_negocio",
+        "barrio",
+        "estrato",
+        "comuna_ciudadano",
+        "fecha_de_beneficio",
+        "monto_del_credito",
+        "línea_credito",
+    ]
+
+    columnas_texto = [
+        "sexo",
+        "tipo_de_emprendimiento",
+        "idea_negocio",
+        "barrio",
+        "línea_credito",
+    ]
+    for columna in columnas_texto:
+        tabla[columna] = (
+            tabla[columna]
+            .str.lower()
+            .str.replace("-", " ", regex=False)
+            .str.split()
+            .str.join(" ")
+        )
+
+    columnas_requeridas = [columna for columna in tabla.columns if columna != "comuna_ciudadano"]
+    tabla = tabla[tabla[columnas_requeridas].ne("").all(axis=1)].copy()
+
+    tabla["estrato"] = pd.to_numeric(tabla["estrato"]).astype(int)
+    tabla["comuna_ciudadano"] = pd.to_numeric(
+        tabla["comuna_ciudadano"], errors="coerce"
+    )
+    tabla["monto_del_credito"] = pd.to_numeric(
+        tabla["monto_del_credito"]
+        .str.replace("$", "", regex=False)
+        .str.replace(",", "", regex=False)
+    ).astype(int)
+
+    fechas = pd.to_datetime(
+        tabla["fecha_de_beneficio"], format="%d/%m/%Y", errors="coerce"
+    )
+    for formato in ("%Y-%m-%d", "%Y/%m/%d"):
+        fechas = fechas.fillna(
+            pd.to_datetime(tabla["fecha_de_beneficio"], format=formato, errors="coerce")
+        )
+    tabla["fecha_de_beneficio"] = fechas.dt.strftime("%Y-%m-%d")
+    tabla = tabla.drop_duplicates()
+
+    directorio_salida = directorio / "submission"
+    directorio_salida.mkdir(parents=True, exist_ok=True)
+    tabla.to_csv(
+        directorio_salida / "solicitudes_de_credito.csv",
+        sep=";",
+        index=False,
+    )

@@ -48,4 +48,79 @@ def main():
         }
     """
 
-    raise NotImplementedError
+    import json
+    import re
+    from pathlib import Path
+
+    import pandas as pd
+
+    directorio = Path(__file__).resolve().parents[1]
+    ruta_datos = directorio / "data" / "ventas.csv.gz"
+    tabla = pd.read_csv(
+        ruta_datos,
+        compression="gzip",
+        dtype=str,
+        keep_default_na=False,
+        encoding="utf-8",
+    )
+    tabla.columns = (
+        tabla.columns.str.replace("\ufeff", "", regex=False)
+        .str.strip()
+        .str.lower()
+        .str.replace(" ", "_", regex=False)
+    )
+
+    columnas_requeridas = [
+        "supplier_id",
+        "supplier",
+        "country",
+        "city",
+        "purchase_date",
+        "amount",
+        "discount",
+        "weight",
+        "units",
+        "unit_price",
+        "contact_email",
+    ]
+    faltantes = tabla.isin(["", "N/A"])
+    unidades_faltantes = faltantes["units"]
+    unidades = pd.to_numeric(tabla["units"].mask(unidades_faltantes), errors="coerce")
+    unidades_invalidas = (
+        ~unidades_faltantes
+        & (
+            unidades.isna()
+            | (unidades <= 0)
+            | (unidades % 1 != 0)
+        )
+    )
+    correos_validos = tabla["contact_email"].str.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+
+    reporte = {
+        "row_count": int(len(tabla)),
+        "column_count": int(len(tabla.columns)),
+        "missing_required_columns": sorted(
+            set(columnas_requeridas) - set(tabla.columns)
+        ),
+        "unexpected_columns": sorted(
+            set(tabla.columns) - set(columnas_requeridas)
+        ),
+        "duplicate_row_count": int(tabla.duplicated().sum()),
+        "duplicate_supplier_id_row_count": int(
+            tabla["supplier_id"].duplicated(keep=False).sum()
+        ),
+        "missing_value_count_by_column": {
+            columna: int(faltantes[columna].sum()) for columna in tabla.columns
+        },
+        "invalid_email_count": int((~correos_validos).sum()),
+        "invalid_unit_count": int(unidades_invalidas.sum()),
+        "country_values": sorted(tabla["country"].unique().tolist()),
+    }
+
+    directorio_salida = directorio / "submission"
+    directorio_salida.mkdir(parents=True, exist_ok=True)
+    (directorio_salida / "data_quality_report.json").write_text(
+        json.dumps(reporte, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return reporte
